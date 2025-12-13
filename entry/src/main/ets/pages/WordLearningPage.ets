@@ -13,6 +13,9 @@ struct WordLearningPage {
   @State isLoading: boolean = true;
   @State currentGroup: number = 0;
 
+  // 用于 TTS 按钮的动画
+  @State isTtsPressed: boolean = false;
+
   aboutToAppear() {
     this.loadData();
   }
@@ -49,9 +52,10 @@ struct WordLearningPage {
       this.updateProgress();
       this.isLoading = false;
 
-      if (this.currentWords.length > 0) {
-        TTSHelper.speak(this.currentWords[this.currentWordIndex].word);
-      }
+      // ❌ 移除：loadData时不自动朗读
+      // if (this.currentWords.length > 0) {
+      //   this.playAudio();
+      // }
 
     } catch (e) {
       console.error('加载失败:', JSON.stringify(e as object));
@@ -67,6 +71,19 @@ struct WordLearningPage {
     }
   }
 
+  // ✅ 朗读方法：移除 Toast 弹窗
+  playAudio() {
+    if (this.currentWords.length > this.currentWordIndex) {
+      const word = this.currentWords[this.currentWordIndex].word;
+      if (word) {
+        // ❌ 移除：朗读时不显示 Toast 弹窗
+        // promptAction.showToast({ message: `🔊 正在朗读: ${word}`, duration: 1000 });
+        TTSHelper.speak(word);
+      }
+    }
+  }
+
+
   async handleUserAction(isKnown: boolean) {
     if (this.currentWordIndex >= this.currentWords.length) return;
 
@@ -78,7 +95,8 @@ struct WordLearningPage {
     if (this.currentWordIndex < this.currentWords.length - 1) {
       this.currentWordIndex++;
       this.updateProgress();
-      TTSHelper.speak(this.currentWords[this.currentWordIndex].word);
+      // ❌ 移除：切换到下一个单词后不自动朗读
+      // this.playAudio();
     } else {
       this.showFinishDialog();
     }
@@ -103,6 +121,8 @@ struct WordLearningPage {
         action: () => {
           this.currentWordIndex = 0;
           this.updateProgress();
+          // ❌ 移除：复习时不自动朗读
+          // this.playAudio();
         }
       },
       secondaryButton: {
@@ -119,7 +139,8 @@ struct WordLearningPage {
     if (this.currentWordIndex > 0) {
       this.currentWordIndex--;
       this.updateProgress();
-      TTSHelper.speak(this.currentWords[this.currentWordIndex].word);
+      // ❌ 移除：撤销后不自动朗读
+      // this.playAudio();
     } else {
       try { promptAction.showToast({ message: '已经是第一个了' }); } catch(e) {}
     }
@@ -155,29 +176,43 @@ struct WordLearningPage {
         // === 单词卡片 ===
         Column() {
 
-          // ✅ 核心修改：智能弹性文本
           Text(this.currentWords[this.currentWordIndex].word)
             .fontWeight(FontWeight.Bold)
             .fontColor('#004D40')
             .fontFamily('Georgia')
             .textAlign(TextAlign.Center)
-            // ⬇️ 关键属性配置
-            .maxLines(2)                  // 1. 最多允许两行
-            .minFontSize(32)              // 2. 最小字号限制在32，防止缩太小看不清
-            .maxFontSize(48)              // 3. 正常最大字号48
-            .heightAdaptivePolicy(TextHeightAdaptivePolicy.MIN_FONT_SIZE_FIRST) // 4. 策略：优先缩小字号，缩不动了再换行
-            .textOverflow({ overflow: TextOverflow.Ellipsis }) // 5. 实在不行才省略号
+            .maxLines(2)
+            .minFontSize(32)
+            .maxFontSize(48)
+            .heightAdaptivePolicy(TextHeightAdaptivePolicy.MIN_FONT_SIZE_FIRST)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
 
+          // 核心修改：TTS 按钮增加反馈
           Row() {
-            Text(`/${this.currentWords[this.currentWordIndex].phonetic}/`)
-              .fontSize(20).fontColor('#827717').margin({ right: 10 })
+            // 音标文本 (有音标才显示)
+            if (this.currentWords[this.currentWordIndex].phonetic && this.currentWords[this.currentWordIndex].phonetic.trim() !== '') {
+              Text(`/${this.currentWords[this.currentWordIndex].phonetic}/`)
+                .fontSize(20).fontColor('#827717').margin({ right: 10 })
+            }
 
+            // 喇叭按钮 (手动点击触发朗读和动画)
             SymbolGlyph($r('sys.symbol.speaker_wave_2'))
-              .fontSize(24).fontColor(['#4DB6AC'])
-              .onClick(() => {
-                TTSHelper.speak(this.currentWords[this.currentWordIndex].word);
-              })
+              .fontSize(24)
+              .fontColor(['#4DB6AC'])
+              .scale({ x: this.isTtsPressed ? 1.2 : 1.0, y: this.isTtsPressed ? 1.2 : 1.0 })
+              .opacity(this.isTtsPressed ? 0.8 : 1.0)
+              .animation({ duration: 100 })
+              .gesture(
+                TapGesture({ count: 1 })
+                  .onAction(() => {
+                    this.isTtsPressed = true;
+                    this.playAudio(); // 只有手动点击这里才会朗读
+                    setTimeout(() => {
+                      this.isTtsPressed = false;
+                    }, 100);
+                  })
+              )
           }
           .margin({ top: 10, bottom: 30 })
 
