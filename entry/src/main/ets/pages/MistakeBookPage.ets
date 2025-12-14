@@ -35,6 +35,7 @@ struct MistakeBookPage {
 
   build() {
     Column() {
+      // 标题栏
       Row() {
         SymbolGlyph($r('sys.symbol.chevron_left')).fontSize(24).fontColor([Color.Black]).onClick(() => router.back())
         Text(`错题本 (${this.mistakeWords.length})`).fontSize(20).fontWeight(FontWeight.Bold).layoutWeight(1).textAlign(TextAlign.Center)
@@ -45,12 +46,14 @@ struct MistakeBookPage {
       if (this.isLoading) {
         Text("加载中...").margin({ top: 20 }).fontColor(Color.Gray)
       } else if (this.mistakeWords.length === 0) {
+        // ✅ 核心修复：让 Column 占据剩余所有空间并居中对齐内容
         Column() {
-          Blank().height(100)
-          // ✅ 修复：替换为存在的 checkmark_circle 图标
           SymbolGlyph($r('sys.symbol.checkmark_circle')).fontSize(60).fontColor(['#FFB74D'])
           Text("太棒了，没有错题！").margin({ top: 10 }).fontColor(Color.Gray)
         }
+        .width('100%')
+        .layoutWeight(1) // 占据剩余空间
+        .justifyContent(FlexAlign.Center) // 垂直居中内容
       } else {
         List({ space: 10 }) {
           ForEach(this.mistakeWords, (item: Word, index: number) => {

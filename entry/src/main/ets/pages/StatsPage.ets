@@ -27,6 +27,11 @@ struct StatsPage {
   @State isLoading: boolean = true;
   @State selectedDayInfo: string = '';
 
+  // 图表参数保持与Column/Row中的配置一致
+  private readonly BAR_WIDTH: number = 20; // 柱状图宽度
+  private readonly BAR_GAP: number = 10;  // Row的 space 属性
+  private readonly CHART_HEIGHT: number = 130; // 柱状图/折线图主体高度
+
   aboutToAppear() {
     this.loadData();
   }
@@ -34,7 +39,6 @@ struct StatsPage {
   async loadData() {
     this.isLoading = true;
 
-    // 调用数据库新方法
     let monthStrs = await DatabaseHelper.getAllMonthsWithData();
 
     let result: MonthData[] = [];
@@ -57,7 +61,9 @@ struct StatsPage {
       });
 
       monthObj.count = total;
+      // 保证 MaxCount 是 10 的倍数向上取整
       monthObj.maxCount = Math.ceil(max / 10) * 10;
+      if (monthObj.maxCount === 0) monthObj.maxCount = 10;
 
       result.push(monthObj);
     }
@@ -75,16 +81,23 @@ struct StatsPage {
     return days;
   }
 
-  // 返回 ArkTS Polyline 所需的坐标数组
-  private getPolylinePoints(item: MonthData, chartHeight: number, barWidth: number, gap: number): Array<[number, number]> {
+  private getPolylinePoints(item: MonthData): Array<[number, number]> {
     let points: Array<[number, number]> = [];
     let days = this.getDaysArray(item.year, item.month);
 
+    const CELL_TOTAL_WIDTH = this.BAR_WIDTH + this.BAR_GAP;
+    const CONTAINER_LEFT_PADDING = 10;
+
     days.forEach((day, index) => {
       let val = item.dailyData.get(day) || 0;
-      let x = index * (barWidth + gap) + (barWidth / 2);
+
+      // X 坐标：Row的左侧 padding + 之前所有单元格的总宽度 + 当前柱子宽度的一半
+      let x = CONTAINER_LEFT_PADDING + (index * CELL_TOTAL_WIDTH) + (this.BAR_WIDTH / 2);
+
       let ratio = val / item.maxCount;
-      let y = chartHeight - (ratio * chartHeight);
+      // Y 坐标：从顶部开始计算，高度越低 Y 值越大
+      let y = this.CHART_HEIGHT - (ratio * this.CHART_HEIGHT);
+
       points.push([x, y]);
     });
     return points;
@@ -137,7 +150,6 @@ struct StatsPage {
                     Text(`共 ${item.count} 词`).fontSize(12).fontColor('#558B2F').backgroundColor('#F1F8E9').padding(6).borderRadius(8)
                   }
 
-                  // ✅ 修复：将 Color.Gray 改为 Hex 字符串 '#9E9E9E'，避免类型报错
                   SymbolGlyph(this.expandedIndex === index ? $r('sys.symbol.chevron_up') : $r('sys.symbol.chevron_down'))
                     .fontSize(16).fontColor(['#9E9E9E']).margin({ left: 10 })
                 }
@@ -158,38 +170,41 @@ struct StatsPage {
                       Blank()
                       Text((item.maxCount / 2).toFixed(0)).fontSize(10).fontColor(Color.Gray)
                       Blank()
-                      Text("0").fontSize(10).fontColor(Color.Gray)
+                      Text("0").fontSize(10).fontColor(Color.Gray).height(10)
                     }
-                    .height(150)
+                    .height(this.CHART_HEIGHT + 20)
                     .width(30)
                     .alignItems(HorizontalAlign.End)
-                    .padding({ right: 5, top: 0, bottom: 20 })
+                    .padding({ right: 5, top: 0, bottom: 10 })
                     .border({ width: { right: 1 }, color: '#E0E0E0' })
 
                     // 图表区
                     Scroll() {
                       Stack({ alignContent: Alignment.TopStart }) {
                         // 柱状图
-                        Row({ space: 10 }) {
+                        Row({ space: this.BAR_GAP }) {
                           ForEach(this.getDaysArray(item.year, item.month), (day: number) => {
                             Column() {
+                              // 柱子
                               Column() {
                                 if (item.dailyData.has(day)) {
                                   Column()
-                                    .width(12)
+                                    .width(this.BAR_WIDTH)
                                     .height(`${(item.dailyData.get(day) || 0) / item.maxCount * 100}%`)
                                     .backgroundColor('#80CBC4')
                                     .borderRadius({ topLeft: 4, topRight: 4 })
                                 } else {
-                                  Column().width(12).height(1).backgroundColor('transparent')
+                                  Column().width(this.BAR_WIDTH).height(1).backgroundColor('transparent')
                                 }
                               }
-                              .height(130)
-                              .width(20)
+                              .height(this.CHART_HEIGHT)
+                              .width(this.BAR_WIDTH)
                               .justifyContent(FlexAlign.End)
                               .alignItems(HorizontalAlign.Center)
 
+                              // 日期数字
                               Text(day.toString()).fontSize(10).fontColor(Color.Gray).margin({ top: 5 })
+                                .height(15)
                             }
                             .onClick(() => {
                               let count = item.dailyData.get(day) || 0;
@@ -201,23 +216,27 @@ struct StatsPage {
 
                         // 折线图
                         Polyline()
-                          .points(this.getPolylinePoints(item, 130, 12, 10))
+                          .points(this.getPolylinePoints(item))
                           .fill('none')
                           .stroke('#009688')
                           .strokeWidth(1.5)
                           .strokeOpacity(0.8)
-                          .margin({ left: 10 })
+                          .margin({ left: 0 })
                           .width('100%')
-                          .height(130)
+                          .height(this.CHART_HEIGHT)
                           .hitTestBehavior(HitTestMode.None)
                       }
-                      .height(150)
+                      // 关键修复 1：将 Stack 的总高度增加 10vp，给数字留出更多绘制空间
+                      .height(this.CHART_HEIGHT + 30)
+                      // 关键修复 2：增加 Scroll 容器底部的内边距
+                      .padding({ bottom: 20 })
                     }
                     .scrollable(ScrollDirection.Horizontal)
                     .scrollBar(BarState.Off)
                     .layoutWeight(1)
                   }
-                  .height(160)
+                  // 关键修复 3：增加外部 Row 的总高度，确保 Row 有足够的空间容纳 Scroll 的新高度
+                  .height(this.CHART_HEIGHT + 40)
                   .width('100%')
                   .backgroundColor('rgba(255,255,255,0.5)')
                   .padding(10)

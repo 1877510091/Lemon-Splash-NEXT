@@ -1,12 +1,26 @@
-/node_modules
-/oh_modules
-/local.properties
-/.idea
-**/build
-/.hvigor
-.cxx
-/.clangd
-/.clang-format
-/.clang-tidy
-**/.test
-/.appanalyzer
+# HarmonyOS DevEco Studio / OpenHarmony Project Files
+
+# Build outputs (编译输出文件)
+/build/
+/out/
+/AppScope/build/
+/entry/build/
+/entry/src/main/resources/base/element/
+/entry/.preview/
+
+# IDE files (IDE 缓存和配置)
+.idea/
+.vscode/
+
+# Log files (日志文件)
+*.log
+!package.log
+
+# Dependency and cache files (依赖和缓存)
+.gradle/
+.hvigor/
+/node_modules/
+/entry/node_modules/
+
+# Local configuration (本地配置)
+local.properties

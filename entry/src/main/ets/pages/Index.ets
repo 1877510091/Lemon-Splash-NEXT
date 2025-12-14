@@ -236,7 +236,7 @@ struct SettingsPageContent {
         this.isDevMode = true;
       }
     } else if (this.clickCount > 2) {
-      promptAction.showToast({ message: `再点 ${5 - this.clickCount} 次`, duration: 500 });
+      promptAction.showToast
     }
   }
 
@@ -251,7 +251,7 @@ struct SettingsPageContent {
         ListItem() { SettingsItem({ sysIcon: $r('sys.symbol.book'), iconColor: '#2196F3', title: "软件信息", subtitle: "柠檬单词 Lemon-Splash" }) }
         ListItem() { SettingsItem({ sysIcon: $r('sys.symbol.person'), iconColor: '#FF9800', title: "作者", subtitle: "QQ: 187510091" }) }
         ListItem() {
-          SettingsItem({ sysIcon: $r('sys.symbol.download'), iconColor: '#009688', title: "项目地址", subtitle: "GitHub/Lemon-Splash (开源免费)", isLink: true })
+          SettingsItem({ sysIcon: $r('sys.symbol.download'), iconColor: '#009688', title: "更新地址", subtitle: "GitHub/Lemon-Splash (HarmonyOS请在应用商店更新)", isLink: true })
         }
         ListItem() {
           Row() {
@@ -270,7 +270,7 @@ struct SettingsPageContent {
 
         // 版本号
         ListItem() {
-          SettingsItem({ sysIcon: $r('sys.symbol.checkmark'), iconColor: '#9C27B0', title: "版本号", subtitle: "v1.3.0 纯净离线版" })
+          SettingsItem({ sysIcon: $r('sys.symbol.checkmark'), iconColor: '#9C27B0', title: "版本号", subtitle: "v1.3.0 NEXT适配版" })
         }
         .onClick(() => {
           this.handleVersionClick();
