@@ -287,6 +287,41 @@ class DatabaseHelper {
     }
   }
 
+  // ----------------------------------------------------
+  // ✅ 【最终修复后的新增代码】解决编译错误
+  // ----------------------------------------------------
+
+  /**
+   * 获取第一个已导入的词库名称作为默认词库。
+   * @returns 第一个词库名称或 null
+   */
+  async getFirstBook(): Promise<string | null> {
+    if (!this.rdbStore) return null;
+
+    let predicates = new relationalStore.RdbPredicates('words');
+
+    // 🚨 最终修复：使用 limitAs 且只传入一个参数 (count)，解决了 "Expected 1 arguments, but got 2" 错误
+    predicates.limitAs(1);
+
+    // 查询结果集，只获取 bookName 字段
+    let resultSet = await this.rdbStore.query(predicates, ['bookName']);
+
+    if (resultSet.goToFirstRow()) {
+      // 获取 bookName 的值
+      const bookName = resultSet.getString(resultSet.getColumnIndex('bookName'));
+      resultSet.close();
+      return bookName;
+    }
+
+    resultSet.close();
+    // 如果 words 表中没有任何数据，则返回 null
+    return null;
+  }
+  // ----------------------------------------------------
+  // ✅ 【最终修复后的新增代码结束】
+  // ----------------------------------------------------
+
+
   async getLastBook(): Promise<string | null> {
     if (!this.rdbStore) return null;
     let predicates = new relationalStore.RdbPredicates('settings');

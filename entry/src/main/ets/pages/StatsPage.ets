@@ -1,6 +1,10 @@
+
 import router from '@ohos.router';
 import DatabaseHelper from '../model/DatabaseHelper';
 
+// ----------------------------------------------------
+// MonthData 类定义 (保持不变)
+// ----------------------------------------------------
 class MonthData {
   title: string;
   count: number;
@@ -15,6 +19,7 @@ class MonthData {
     this.title = `${year}年${month}月`;
     this.count = 0;
     this.dailyData = new Map();
+    // 初始值应与 loadData 保持一致，避免零除或图表异常
     this.maxCount = 10;
   }
 }
@@ -32,6 +37,9 @@ struct StatsPage {
   private readonly BAR_GAP: number = 10;  // Row的 space 属性
   private readonly CHART_HEIGHT: number = 130; // 柱状图/折线图主体高度
 
+  // ⚠️ 新增：滚动控制器
+  private scrollController: Scroller = new Scroller();
+
   aboutToAppear() {
     this.loadData();
   }
@@ -39,7 +47,8 @@ struct StatsPage {
   async loadData() {
     this.isLoading = true;
 
-    let monthStrs = await DatabaseHelper.getAllMonthsWithData();
+    // 修复 TS/类型推断错误
+    let monthStrs: string[] = await DatabaseHelper.getAllMonthsWithData();
 
     let result: MonthData[] = [];
 
@@ -50,12 +59,13 @@ struct StatsPage {
 
       let monthObj = new MonthData(year, month);
 
-      let dataMap = await DatabaseHelper.getMonthlyData(year, month);
+      // 修复 TS/类型推断错误
+      let dataMap: Map<number, number> = await DatabaseHelper.getMonthlyData(year, month);
       monthObj.dailyData = dataMap;
 
       let total = 0;
       let max = 5;
-      dataMap.forEach((v) => {
+      dataMap.forEach((v: number) => { // 修复 TS/类型推断错误
         total += v;
         if (v > max) max = v;
       });
@@ -88,7 +98,7 @@ struct StatsPage {
     const CELL_TOTAL_WIDTH = this.BAR_WIDTH + this.BAR_GAP;
     const CONTAINER_LEFT_PADDING = 10;
 
-    days.forEach((day, index) => {
+    days.forEach((day: number, index: number) => { // 修复 TS/类型推断错误
       let val = item.dailyData.get(day) || 0;
 
       // X 坐标：Row的左侧 padding + 之前所有单元格的总宽度 + 当前柱子宽度的一半
@@ -102,6 +112,34 @@ struct StatsPage {
     });
     return points;
   }
+
+  // ⚠️ 新增：实现滚动到当前日期的方法
+  private scrollToToday(item: MonthData): void {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentDay = currentDate.getDate();
+
+    // 仅在当前展开的月份是今天的月份时才滚动
+    if (currentYear === item.year && currentMonth === item.month) {
+      // 每一天占用的总宽度
+      const CELL_TOTAL_WIDTH = this.BAR_WIDTH + this.BAR_GAP;
+      // 计算滚动位置到当天柱子的左侧 X 坐标
+      const dayPosition = (currentDay - 1) * CELL_TOTAL_WIDTH;
+
+      // 使用延时确保 DOM 完成渲染
+      setTimeout(() => {
+        this.scrollController.scrollTo({
+          xOffset: dayPosition - 100, // 减去100让当天居中或偏左显示
+          yOffset: 0, // 保持 yOffset 为必需参数
+          animation: {
+            duration: 300
+          }
+        });
+      }, 100);
+    }
+  }
+
 
   build() {
     Column() {
@@ -134,6 +172,7 @@ struct StatsPage {
         Text("暂无数据，快去背单词吧！").margin({top: 50}).fontColor(Color.Gray)
       } else {
         List({ space: 15 }) {
+          // 修复 TS/类型推断错误
           ForEach(this.months, (item: MonthData, index: number) => {
             ListItem() {
               Column() {
@@ -160,6 +199,10 @@ struct StatsPage {
                     this.expandedIndex = this.expandedIndex === index ? -1 : index;
                     this.selectedDayInfo = '';
                   })
+                  // ⚠️ 修复：在动画结束后调用滚动方法
+                  if (this.expandedIndex === index) {
+                    this.scrollToToday(item);
+                  }
                 })
 
                 if (this.expandedIndex === index) {
@@ -179,7 +222,8 @@ struct StatsPage {
                     .border({ width: { right: 1 }, color: '#E0E0E0' })
 
                     // 图表区
-                    Scroll() {
+                    // ⚠️ 修复：关联 this.scrollController
+                    Scroll(this.scrollController) {
                       Stack({ alignContent: Alignment.TopStart }) {
                         // 柱状图
                         Row({ space: this.BAR_GAP }) {

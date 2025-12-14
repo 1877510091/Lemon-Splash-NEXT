@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "storeFile": "F:/Project/Harmony/danci/key/key.p12",
+          "storePassword": "0000001C30532180553917DA976B107669ECE7CC7EDD6507D221017B6579AB58925579AA1996CAAEA2CEFD38",
+          "keyAlias": "Reine",
+          "keyPassword": "0000001C2215E80CE3E66B53E51B6D28A8F2432845103EE30EA94002D010F58F1D88FB0327194A8F452D1DD8",
+          "signAlg": "SHA256withECDSA",
+          "profile": "F:/Project/Harmony/danci/key/ReineRelease.p7b",
+          "certpath": "F:/Project/Harmony/danci/key/Reine.cer"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
@@ -8,6 +22,10 @@
         "targetSdkVersion": "6.0.1(21)",
         "compatibleSdkVersion": "6.0.1(21)",
         "runtimeOS": "HarmonyOS",
+        "versionName": "1.3.0",
+        "versionCode": 1000003,
+        "bundleName": "com.lemon.splash",
+        "vendor": "lemon",
         "buildOption": {
           "strictMode": {
             "caseSensitiveCheck": true,
@@ -18,7 +36,7 @@
     ],
     "buildModeSet": [
       {
-        "name": "debug",
+        "name": "debug"
       },
       {
         "name": "release"

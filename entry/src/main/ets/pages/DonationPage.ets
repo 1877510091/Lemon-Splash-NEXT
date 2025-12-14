@@ -50,32 +50,11 @@ struct DonationPage {
       this.startSaving();
     }
   }
-
   async startSaving() {
     try {
-      promptAction.showToast({ message: '正在保存...' });
-
-      let p1 = this.saveResourceToAlbum($r('app.media.wxzsm'), '微信赞赏');
-      let p2 = this.saveResourceToAlbum($r('app.media.zfbzsm'), '支付宝赞赏');
-
-      let results = await Promise.all([p1, p2]);
-      let hasSuccess = false;
-      for (let res of results) {
-        if (res) hasSuccess = true;
-      }
-
-      if (hasSuccess) {
-        promptAction.showToast({
-          message: '哎呀哎呀哎呀，再次感谢我各位总~',
-          duration: 3000,
-          bottom: 300
-        });
-      } else {
-        throw new Error("全部保存失败");
-      }
-
+      promptAction.showToast({ message: '图片已删除，请手动截图保存' });
     } catch (e) {
-      promptAction.showToast({ message: '保存失败，请检查权限或手动截图' });
+      promptAction.showToast({ message: '保存失败，请手动截图' });
     }
   }
 
@@ -86,7 +65,7 @@ struct DonationPage {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24).fontColor(['#E91E63'])
           .onClick(() => router.back())
-        Text("赞赏作者")
+        Text("赞赏作者[渠道已关闭]")
           .fontSize(20).fontWeight(FontWeight.Bold).fontColor('#E91E63')
           .layoutWeight(1).textAlign(TextAlign.Center)
         Blank().width(24)
@@ -108,34 +87,32 @@ struct DonationPage {
             .fontSize(16).fontWeight(FontWeight.Medium).fontColor('#E91E63')
             .textAlign(TextAlign.Center).lineHeight(24)
             .margin({ top: 10, bottom: 40 }).padding({ left: 20, right: 20 })
-
           Row({ space: 30 }) {
             Column() {
-              Image($r('app.media.wxzsm'))
+              Blank()
                 .width(130).height(130).borderRadius(10)
                 .backgroundColor(Color.White).padding(5)
                 .shadow({ radius: 10, color: 'rgba(233, 30, 99, 0.2)', offsetY: 5 })
-              Text("微信支付").fontSize(14).fontColor('#09BB07').margin({ top: 10 }).fontWeight(FontWeight.Medium)
+              Text("微信支付[已关闭]").fontSize(14).fontColor('#09BB07').margin({ top: 10 }).fontWeight(FontWeight.Medium)
             }
             Column() {
-              Image($r('app.media.zfbzsm'))
+              Blank()
                 .width(130).height(130).borderRadius(10)
                 .backgroundColor(Color.White).padding(5)
                 .shadow({ radius: 10, color: 'rgba(233, 30, 99, 0.2)', offsetY: 5 })
-              Text("支付宝").fontSize(14).fontColor('#0277BD').margin({ top: 10 }).fontWeight(FontWeight.Medium)
+              Text("支付宝[已关闭]").fontSize(14).fontColor('#0277BD').margin({ top: 10 }).fontWeight(FontWeight.Medium)
             }
           }
           .justifyContent(FlexAlign.Center)
           .width('100%')
           .margin({ bottom: 50 })
-
-          Button("保存赞赏码图片")
-            .backgroundColor('#E91E63')
+          Button("点击保存赞赏码🌹")
+            .backgroundColor('#999999')
             .width('70%')
             .height(50)
-            .shadow({ radius: 10, color: 'rgba(233, 30, 99, 0.3)', offsetY: 5 })
+            .shadow({ radius: 10, color: 'rgba(153, 153, 153, 0.3)', offsetY: 5 })
             .onClick(() => {
-              this.requestPermissionAndSave();
+              promptAction.showToast({ message: '赞赏渠道已关闭' });
             })
 
           Text("感谢您的支持！")

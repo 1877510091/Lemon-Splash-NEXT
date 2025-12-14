@@ -15,14 +15,37 @@ struct Index {
 
   private controller: TabsController = new TabsController();
 
+  // ----------------------------------------------------
+  // ✅ 【修改： aboutToAppear】 确保设置了默认词库或空值引导
+  // ----------------------------------------------------
   async aboutToAppear() {
     await DatabaseHelper.init(getContext(this) as common.UIAbilityContext);
-    const lastBook = await DatabaseHelper.getLastBook();
-    if (lastBook) {
-      AppStorage.SetOrCreate('currentBook', lastBook);
+
+    // 1. 获取上次使用的词库
+    let currentBookName: string | null = await DatabaseHelper.getLastBook();
+
+    // 2. 如果上次使用的词库不存在 (包括首次启动)
+    if (!currentBookName) {
+      // 3. 尝试获取第一个默认词库
+      const defaultBook = await DatabaseHelper.getFirstBook();
+
+      if (defaultBook) {
+        // 如果数据库有词库，则设置为默认
+        currentBookName = defaultBook;
+      } else {
+        // 🚨 关键：如果数据库中没有任何词库，设置一个特定的空值引导用户选择
+        currentBookName = 'NO_BOOK_SELECTED';
+      }
     }
+
+    // 4. 将最终确定的值设置到 AppStorage
+    AppStorage.SetOrCreate('currentBook', currentBookName);
+
     this.refreshData();
   }
+  // ----------------------------------------------------
+  // ✅ 【修改结束】
+  // ----------------------------------------------------
 
   onPageShow() {
     this.refreshData();
@@ -116,7 +139,7 @@ struct Index {
 // ======================= 首页内容 =======================
 @Component
 struct HomePageContent {
-  @StorageProp('currentBook') currentBook: string = "四级词汇";
+  @StorageProp('currentBook') currentBook: string = "请选择词库"; // ⬅️ 提示用户选择
   @Prop todayCount: number;
 
   build() {
@@ -147,10 +170,11 @@ struct HomePageContent {
 
       Blank().height(60)
 
-      // 正在学习卡片
+      // 正在学习卡片 (点击跳转到词库库页面)
       LemonGlassCard({
         title: "正在学习",
-        value: this.currentBook,
+        // 🚨 检查是否是空值，如果是则显示提示
+        value: this.currentBook === 'NO_BOOK_SELECTED' ? '请选择词库' : this.currentBook,
         sysIcon: $r('sys.symbol.book'),
         themeColor: '#00BCD4',
         textColor: '#006064'
@@ -179,7 +203,28 @@ struct HomePageContent {
       .linearGradient({ angle: 135, colors: [['#FFF176', 0.0], ['#DCE775', 1.0]] })
       .backgroundColor('#FFEE58').borderRadius(35)
       .shadow({ radius: 20, color: 'rgba(251, 192, 45, 0.4)', offsetY: 10 })
-      .onClick(() => { try { router.pushUrl({ url: 'pages/WordLearningPage' }) } catch(e) {} })
+      // ----------------------------------------------------
+      // ✅ 【修改： onClick】 添加词库空值判断
+      // ----------------------------------------------------
+      .onClick(() => {
+        try {
+          const currentBook = AppStorage.Get<string>('currentBook');
+
+          if (currentBook && currentBook !== 'NO_BOOK_SELECTED') {
+            // 状态正常，跳转到学习页面
+            router.pushUrl({ url: 'pages/WordLearningPage' });
+          } else {
+            // 没有词库，强制跳转到词库选择页面并提示
+            promptAction.showToast({ message: '请先选择或导入词库', duration: 1500 });
+            router.pushUrl({ url: 'pages/BookLibraryPage' });
+          }
+        } catch(e) {
+          console.error('Start learning click error:', JSON.stringify(e));
+        }
+      })
+      // ----------------------------------------------------
+      // ✅ 【修改结束】
+      // ----------------------------------------------------
 
       Blank().height(20)
 
@@ -249,7 +294,7 @@ struct SettingsPageContent {
 
       List() {
         ListItem() { SettingsItem({ sysIcon: $r('sys.symbol.book'), iconColor: '#2196F3', title: "软件信息", subtitle: "柠檬单词 Lemon-Splash" }) }
-        ListItem() { SettingsItem({ sysIcon: $r('sys.symbol.person'), iconColor: '#FF9800', title: "作者", subtitle: "QQ: 187510091" }) }
+        ListItem() { SettingsItem({ sysIcon: $r('sys.symbol.person'), iconColor: '#FF9800', title: "作者", subtitle: "已关闭" }) }
         ListItem() {
           SettingsItem({ sysIcon: $r('sys.symbol.download'), iconColor: '#009688', title: "更新地址", subtitle: "GitHub/Lemon-Splash (HarmonyOS请在应用商店更新)", isLink: true })
         }
